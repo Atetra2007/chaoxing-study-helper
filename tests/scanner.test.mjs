@@ -47,6 +47,34 @@ test('unknown reader does not infer total from only currently visible anchors',(
   setup('<html><body><div id="anchor1"><img src="https://s3.cldisk.com/1.png"></div></body></html>','https://mooc1.chaoxing.com/unknown');
   assert.equal(scanDocument().rosterTotal,null);
 });
+test('visible library popup binds the open filename to its embedded resource reader',()=>{
+  setup('<html><body><div class="previewPop"><div class="readTitle"><span class="titleContent">物理教材.pdf</span></div><iframe src="/ananas/modules/pdf/mooc2-resource-index.html?v=fixture"></iframe></div><div class="previewPop" hidden><div class="readTitle"><span class="titleContent">旧文件.pdf</span></div><iframe src="/old"></iframe></div></body></html>','https://mooc2-ans.chaoxing.com/mooc2-ans/coursedata/stu-datalist');
+  assert.deepEqual(scanDocument().titleBindings,[{frameKey:'https://mooc2-ans.chaoxing.com/ananas/modules/pdf/mooc2-resource-index.html',title:'物理教材.pdf'}]);
+});
+
+test('WPS fallback requires matching document links and a visible normal-preview button',()=>{
+  const html = id=>`<html><body><iframe id="office-iframe" src="https://wps1.cldisk.com/weboffice/office/f/fixture?_secret=omitted"></iframe><iframe id="panView" src="https://pan-yz.chaoxing.com/screen/v2/file_${id}?signature=fixture"></iframe><div id="otherOpen1"></div></body></html>`;
+  const url='https://mooc2-ans.chaoxing.com/ananas/modules/pdf/mooc2-resource-index.html';
+  setup(html('fixture'),url);
+  assert.deepEqual(scanDocument().previewFallback,{officeKey:'https://wps1.cldisk.com/weboffice/office/f/fixture',imageKey:'https://pan-yz.chaoxing.com/screen/v2/file_fixture',canSwitch:true});
+  document.querySelector('#otherOpen1').setAttribute('hidden','');
+  assert.equal(scanDocument().previewFallback.canSwitch,false);
+  setup(html('different'),url);assert.equal(scanDocument().previewFallback,null);
+  setup(html('fixture'),'https://mooc2-ans.chaoxing.com/unrelated');assert.equal(scanDocument().previewFallback,null);
+});
+
+test('popup filename reaches the matching page reader instead of using the course title',()=>{
+  const wrapperKey='https://mooc2-ans.chaoxing.com/ananas/modules/pdf/mooc2-resource-index.html';
+  const imageKey='https://pan-yz.chaoxing.com/screen/v2/file_fixture';
+  const frames=[{frameId:0,result:{title:'大学物理课程'}},
+    {frameId:1,result:{titleBindings:[{frameKey:wrapperKey,title:'物理教材.pdf'}]}},
+    {frameId:2,result:{frameKey:wrapperKey,previewFallback:{imageKey}}},
+    {frameId:3,result:{frameKey:imageKey,readerKind:'chaoxing-screen-v2',rosterTotal:1,pages:[{number:1,url:'https://s3.cldisk.com/1.png'}]}}];
+  assert.equal(candidatesFromFrames(frames)[0].title,'物理教材.pdf');
+  frames[1].result.titleBindings.push({frameKey:wrapperKey,title:'另一本教材.pdf'});
+  assert.equal(candidatesFromFrames(frames)[0].title,'大学物理课程');
+});
+
 test('source change or disappeared document is rejected before export',async()=>{
   globalThis.chrome={scripting:{executeScript:async()=>[{frameId:3,result:{frameKey:'https://chaoxing.com/new',pages:[],originals:[]}}]}};
   await assert.rejects(validateSource(1,{documentId:'old-document',identity:'old',kind:'images'}),/变化/);

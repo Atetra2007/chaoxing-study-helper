@@ -3,6 +3,7 @@ import { allowedURL, outputPath, sha256 } from './model.js';
 import { assemblePDF } from './pdf.js';
 import { scanTab, validateSource } from './browser.js';
 import { downloadFile } from './downloads.js';
+import { loadSourceTabs } from './source-tabs.js';
 
 const $ = id => document.getElementById(id);
 let sourceId = Number(new URLSearchParams(location.search).get('source')) || null;
@@ -177,10 +178,10 @@ chrome.tabs.onRemoved.addListener(id=>{if(busy&&id===sourceId){cancelled=true;ta
 
 async function init(){
   try{
-    const tabs=(await chrome.tabs.query({url:['https://*.chaoxing.com/*']})).filter(t=>/studentstudy|\/screen\/v2\//.test(t.url||''));
+    const sources=await loadSourceTabs(chrome.tabs,sourceId);
+    const tabs=sources.tabs;sourceId=sources.sourceId;
     $('source').replaceChildren(new Option('请选择已打开的课件',''));
     tabs.forEach((t,i)=>$('source').append(new Option(`${t.title||'学习通课件'}${tabs.length>1?' · '+(i+1):''}`,String(t.id))));
-    if(!tabs.some(t=>t.id===sourceId))sourceId=tabs.length===1?tabs[0].id:null;
     if(sourceId)$('source').value=String(sourceId);
     const {course=''}=await chrome.storage.local.get('course');$('course').value=course;
     await scan();

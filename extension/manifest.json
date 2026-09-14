@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "学习通课件助手",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "保存当前打开的学习通课件，按页合成离线 PDF，并检查完整性。",
   "minimum_chrome_version": "109",
   "permissions": ["activeTab", "scripting", "downloads", "storage"],

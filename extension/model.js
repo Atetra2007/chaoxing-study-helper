@@ -41,6 +41,17 @@ export function normalizePages(input, total) {
 
 export function candidatesFromFrames(frames) {
   const topTitle = frames.find(f => f.frameId === 0)?.result?.title || '';
+  const boundTitles = new Map();
+  const bind = (key, title) => {
+    if (!key || !title) return;
+    const titles = boundTitles.get(key) || new Set(); titles.add(title); boundTitles.set(key, titles);
+  };
+  const titleFor = key => { const titles = boundTitles.get(key); return titles?.size === 1 ? [...titles][0] : ''; };
+  for (const frame of frames) for (const binding of frame.result?.titleBindings || []) bind(binding.frameKey, binding.title);
+  for (const frame of frames) {
+    const data = frame.result;
+    if (data?.previewFallback) bind(data.previewFallback.imageKey, titleFor(data.frameKey));
+  }
   const candidates = [];
   const seenOriginals = new Set();
   for (const frame of frames) {
@@ -58,7 +69,7 @@ export function candidatesFromFrames(frames) {
     if (data.readerKind !== 'chaoxing-screen-v2') issue ||= '此阅读器的分页规则尚未验证，暂不导出，以免漏页。';
     const identity = `${data.frameKey}|${data.rosterTotal}|${data.pages.slice().sort((a,b)=>a.number-b.number)
       .map(p => `${p.number}:${p.url ? canonicalURL(p.url) : ''}`).join('|')}`;
-    candidates.push({ kind: 'images', title: topTitle || data.title || '学习通课件',
+    candidates.push({ kind: 'images', title: titleFor(data.frameKey) || topTitle || data.title || '学习通课件',
       total: data.rosterTotal, totalBasis: data.totalBasis, pages, issue,
       frameId: frame.frameId, documentId: frame.documentId, frameKey: data.frameKey, identity });
   }
