@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>学习通课件助手</title><link rel="stylesheet" href="workspace.css">
+</head>
+<body>
+  <header class="topbar"><div class="brand-icon" aria-hidden="true">▤</div><span>学习通课件助手</span><span class="version">v0.1.2</span><span class="local-tag">本地保存 · 离线学习</span></header>
+  <main>
+    <section class="intro"><div class="eyebrow">让课件回到你的学习节奏</div><h1>保存课件，安心记笔记。</h1><p>保留页面原貌，整理成电脑里的学习资料。</p></section>
+    <div class="layout">
+      <section class="card material-card" aria-labelledby="material-heading">
+        <div class="card-top"><h2 id="material-heading">当前资料</h2><button id="rescan" class="text-button">重新识别</button></div>
+        <label for="source">课件标签页</label><select id="source"><option value="">正在查找学习通页面…</option></select>
+        <label for="material">选择保存内容</label><select id="material" disabled><option value="">等待识别</option></select>
+        <div id="kind" class="kind">识别后显示保存方式</div>
+        <div class="divider"></div>
+        <label for="course">课程文件夹 <span class="optional">可自行命名</span></label><input id="course" maxlength="70" placeholder="例如：概率论与数理统计" autocomplete="off">
+        <label for="title">文件名称</label><input id="title" maxlength="100" placeholder="识别后自动填写" autocomplete="off">
+        <div class="destination"><span>保存到浏览器下载目录</span><code id="destination">学习通课件 / 未分类课程 / …</code></div>
+        <label class="checkbox"><input type="checkbox" id="save-as">保存时让我选择位置</label>
+        <div id="history-note" class="notice" hidden></div>
+        <button id="start" class="primary" disabled>开始保存</button>
+        <button id="return-source" class="text-button back-button">返回课件页面 ↗</button>
+      </section>
+      <section class="card progress-card" aria-labelledby="progress-heading">
+        <div class="card-top"><h2 id="progress-heading">保存进度</h2><span id="status-badge" class="badge">准备中</span></div>
+        <div id="status-text" class="status-text" role="status" aria-live="polite">正在读取你打开的课件…</div>
+        <div class="metrics"><div><strong id="total-count">—</strong><span>资料页数</span></div><div><strong id="ready-count">0</strong><span>已获取</span></div><div><strong id="failed-count">0</strong><span>需重试</span></div></div>
+        <progress id="progress" value="0" max="100" aria-label="页面获取进度"></progress>
+        <div class="progress-meta"><span id="progress-caption">识别后即可开始</span><span id="bytes">0 MB</span></div>
+        <div id="page-grid" class="page-grid" aria-label="每页保存状态"></div>
+        <div id="error" class="error" role="alert" hidden></div>
+        <div id="warning" class="notice" hidden></div>
+        <div class="actions"><button id="pause" hidden>暂停</button><button id="retry" hidden>重试失败页面</button><button id="cancel" class="quiet" hidden>取消保存</button><button id="show-file" hidden>打开所在文件夹</button></div>
+        <div id="success" class="success" hidden><span class="success-mark">✓</span><div><strong>已保存到电脑</strong><p id="success-detail"></p></div></div>
+        <div class="tips"><h3>保存过程中</h3><p>可以切换窗口去记笔记。请保留这个保存页面和原课件标签页，电脑休眠会暂停任务。</p><p>图片型 PDF 支持手写批注和文本框注释；文字搜索、选择文字需要后续文字识别。</p></div>
+      </section>
+    </div>
+    <footer>只处理你选择的课件 · 同名文件自动另存 · 不上传资料到第三方服务</footer>
+  </main>
+  <script src="vendor/pdf-lib.min.js"></script><script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>浏览器原生请求回归检查</title>
+<body>
+<h1>浏览器原生请求回归检查</h1>
+<p>仅请求本机代码生成的合成测试图片，不模拟或覆盖浏览器的 fetch，不调用扩展接口。本检查不代表真实课件保存验证。</p>
+<button id="run">运行检查</button>
+<pre id="result" role="status">尚未运行</pre>
+<script type="module">
+import { CaptureTask, inspectImage } from '/engine.js';
+const result = document.querySelector('#result');
+document.querySelector('#run').addEventListener('click', async () => {
+  const rows = [];
+  const check = async (name, request) => {
+    try {
+      const response = await request();
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const dimensions = await inspectImage(bytes);
+      rows.push({name, passed:true, bytes:bytes.length, ...dimensions});
+    } catch (error) {
+      rows.push({name, passed:false, error:`${error.name}: ${error.message}`});
+    }
+    result.textContent = JSON.stringify(rows, null, 2);
+  };
+  await check('直接调用浏览器原生请求', () => window.fetch('/sample/1.png'));
+  const task = new CaptureTask([]);
+  await check('保存任务的默认请求函数', () => task.fetcher('/sample/1.png'));
+});
+</script>
+</body>
+</html>
