@@ -51,6 +51,7 @@ export function candidatesFromFrames(frames) {
   for (const frame of frames) {
     const data = frame.result;
     if (data?.previewFallback) bind(data.previewFallback.imageKey, titleFor(data.frameKey));
+    if (data?.imagePreviewKey) bind(data.imagePreviewKey, titleFor(data.frameKey));
   }
   const candidates = [];
   const seenOriginals = new Set();
@@ -66,6 +67,7 @@ export function candidatesFromFrames(frames) {
     if (!data.pages?.length) continue;
     let pages = [], issue = '';
     try { pages = normalizePages(data.pages, data.rosterTotal); } catch (error) { issue = error.message; }
+    if(data.totalConflict)issue='阅读器显示的总页数存在冲突，请核对课件后重新识别。';
     if (data.readerKind !== 'chaoxing-screen-v2') issue ||= '此阅读器的分页规则尚未验证，暂不导出，以免漏页。';
     const identity = `${data.frameKey}|${data.rosterTotal}|${data.pages.slice().sort((a,b)=>a.number-b.number)
       .map(p => `${p.number}:${p.url ? canonicalURL(p.url) : ''}`).join('|')}`;

@@ -5,7 +5,7 @@
   <title>学习通课件助手</title><link rel="stylesheet" href="workspace.css">
 </head>
 <body>
-  <header class="topbar"><div class="brand-icon" aria-hidden="true">▤</div><span>学习通课件助手</span><span class="version">v0.1.3</span><span class="local-tag">本地保存 · 离线学习</span></header>
+  <header class="topbar"><div class="brand-icon" aria-hidden="true">▤</div><span>学习通课件助手</span><span id="version" class="version">读取版本…</span><span class="local-tag">本地保存 · 离线学习</span></header>
   <main>
     <section class="intro"><div class="eyebrow">让课件回到你的学习节奏</div><h1>保存课件，安心记笔记。</h1><p>保留页面原貌，整理成电脑里的学习资料。</p></section>
     <div class="layout">
@@ -14,9 +14,14 @@
         <label for="source">课件标签页</label><select id="source"><option value="">正在查找学习通页面…</option></select>
         <label for="material">选择保存内容</label><select id="material" disabled><option value="">等待识别</option></select>
         <div id="kind" class="kind">识别后显示保存方式</div>
+        <div id="completeness" class="notice">识别后显示页数依据。</div>
         <div class="divider"></div>
         <label for="course">课程文件夹 <span class="optional">可自行命名</span></label><input id="course" maxlength="70" placeholder="例如：概率论与数理统计" autocomplete="off">
         <label for="title">文件名称</label><input id="title" maxlength="100" placeholder="识别后自动填写" autocomplete="off">
+        <div id="quality-options" hidden><label for="image-quality">图片页画质</label><select id="image-quality" aria-describedby="quality-note"><option value="balanced">均衡压缩（推荐）</option><option value="original">原画质</option></select><p id="quality-note" class="quality-note">保留分辨率和颜色，有轻微有损压缩；适合日常阅读。精细公式可选原画质。</p>
+          <label class="checkbox"><input type="checkbox" id="ocr-enabled">文字优先（本机OCR · 试验）</label><p class="quality-note">尽量保留原排版。插图、表格、公式及不确定页自动保留图片；水印可能影响识别。OCR文字需对照原文。</p>
+          <div id="ocr-settings" hidden><button id="ocr-connect" type="button">连接本地OCR</button><input id="ocr-file" type="file" aria-label="选择本地OCR连接文件" accept="application/json,.json" hidden><p id="ocr-status" class="quality-note" role="status">先运行项目的 scripts/start-ocr.ps1，再选择 work/ocr-connection.json。首次启动会下载模型。</p></div>
+        </div>
         <div class="destination"><span>保存到浏览器下载目录</span><code id="destination">学习通课件 / 未分类课程 / …</code></div>
         <label class="checkbox"><input type="checkbox" id="save-as">保存时让我选择位置</label>
         <div id="history-note" class="notice" hidden></div>
@@ -32,9 +37,10 @@
         <div id="page-grid" class="page-grid" aria-label="每页保存状态"></div>
         <div id="error" class="error" role="alert" hidden></div>
         <div id="warning" class="notice" hidden></div>
+        <details id="diagnostics"><summary>诊断信息（已脱敏）</summary><p>仅含版本、页数、错误类别和耗时，可复制反馈。</p><textarea id="diagnostic-report" readonly rows="9" aria-label="脱敏诊断信息"></textarea><button id="copy-diagnostic">复制诊断信息</button><span id="copy-status" role="status"></span></details>
         <div class="actions"><button id="pause" hidden>暂停</button><button id="retry" hidden>重试失败页面</button><button id="cancel" class="quiet" hidden>取消保存</button><button id="show-file" hidden>打开所在文件夹</button></div>
         <div id="success" class="success" hidden><span class="success-mark">✓</span><div><strong>已保存到电脑</strong><p id="success-detail"></p></div></div>
-        <div class="tips"><h3>保存过程中</h3><p>可以切换窗口去记笔记。请保留这个保存页面和原课件标签页，电脑休眠会暂停任务。</p><p>图片型 PDF 支持手写批注和文本框注释；文字搜索、选择文字需要后续文字识别。</p></div>
+        <div class="tips"><h3>保存过程中</h3><p>可以切换窗口去记笔记。请保留这个保存页面和原课件标签页，电脑休眠会暂停任务。</p><p>图片页可批注。启用文字优先后，成功转换的文字页还可搜索和选择文字；其余页面保留图片。</p></div>
       </section>
     </div>
     <footer>只处理你选择的课件 · 同名文件自动另存 · 不上传资料到第三方服务</footer>

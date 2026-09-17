@@ -2,6 +2,8 @@ import { mkdir, copyFile, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
 const manifest=JSON.parse(await readFile(path.join(root,'extension','manifest.json'),'utf8'));
+const pkg=JSON.parse(await readFile(path.join(root,'package.json'),'utf8'));
+if(pkg.version!==manifest.version)throw new Error('package.json与manifest版本不一致，停止构建。');
 const out=path.join(root,'outputs',`chaoxing-study-helper-${manifest.version}`);
 await mkdir(path.join(out,'vendor'),{recursive:true});
 for(const file of await readdir(path.join(root,'extension'))){

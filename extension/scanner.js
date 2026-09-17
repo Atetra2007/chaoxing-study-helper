@@ -28,8 +28,9 @@ export function scanDocument() {
   // Only this observed static, numbered reader is counted as a complete roster.
   const knownReader = /(^|\.)chaoxing\.com$/i.test(location.hostname) && /^\/screen\/v2\//.test(location.pathname);
   const visibleText = document.body?.innerText || '';
-  const totalMatch = visibleText.match(/共\s*(\d+)\s*页/);
-  const explicitTotal = totalMatch ? Number(totalMatch[1]) : null;
+  const totals = [...new Set([...visibleText.matchAll(/共\s*(\d+)\s*页/g)].map(match=>Number(match[1])))];
+  const explicitTotal = totals.length === 1 ? totals[0] : null;
+  const totalConflict = totals.length > 1;
   // Course-library dialogs expose the file name outside the embedded reader.
   const titleBindings = [...document.querySelectorAll('.previewPop')].filter(visible).flatMap(dialog => {
     const label = dialog.querySelector('.readTitle .titleContent');
@@ -46,6 +47,7 @@ export function scanDocument() {
   // This wrapper offers a normal page-image preview for the same WPS document.
   // Read only the DOM links and the visibility of its existing switch button.
   let previewFallback = null;
+  let imagePreviewKey = '';
   if (/(^|\.)chaoxing\.com$/i.test(location.hostname) && location.pathname === '/ananas/modules/pdf/mooc2-resource-index.html') {
     try {
       const office = document.querySelector('#office-iframe');
@@ -53,6 +55,13 @@ export function scanDocument() {
       const button = document.querySelector('#otherOpen1');
       const officeURL = new URL(office?.getAttribute('src') || '', document.baseURI);
       const imageURL = new URL(image?.getAttribute('src') || '', document.baseURI);
+      // Observed wrapper variant has only a visible panView (no WPS iframe).
+      // Bind its visible reader to the dialog title without switching anything.
+      if(image && visible(image) && imageURL.protocol === 'https:' && !imageURL.username && !imageURL.password
+        && (!imageURL.port || imageURL.port === '443') && /(^|\.)chaoxing\.com$/i.test(imageURL.hostname)
+        && /^\/screen\/v2\/file_[a-zA-Z0-9_-]+$/.test(imageURL.pathname)) {
+        imagePreviewKey = imageURL.origin + imageURL.pathname;
+      }
       const fileId = officeURL.pathname.match(/^\/weboffice\/office\/f\/([a-zA-Z0-9_-]+)$/)?.[1];
       if (officeURL.protocol === 'https:' && !officeURL.username && !officeURL.password && (!officeURL.port || officeURL.port === '443')
         && /^wps\d+\.cldisk\.com$/i.test(officeURL.hostname)
@@ -77,8 +86,9 @@ export function scanDocument() {
     readerKind: knownReader ? 'chaoxing-screen-v2' : 'unconfirmed',
     // A visible total is stronger evidence than the currently loaded anchors.
     // Preserve invalid/conflicting totals so normalizePages rejects partial exports.
-    rosterTotal: explicitTotal ?? (knownReader && anchors.length ? Math.max(...pages.map(p => p.number)) : null),
-    totalBasis: explicitTotal !== null ? 'explicit-total' : knownReader && anchors.length ? 'reader-list' : 'unknown',
-    pages, originals, titleBindings, previewFallback,
+    rosterTotal: totalConflict ? null : explicitTotal ?? (knownReader && anchors.length ? Math.max(...pages.map(p => p.number)) : null),
+    totalBasis: totalConflict ? 'unknown' : explicitTotal !== null ? 'explicit-total' : knownReader && anchors.length ? 'reader-list' : 'unknown',
+    totalConflict,
+    pages, originals, titleBindings, previewFallback, imagePreviewKey,
   };
 }

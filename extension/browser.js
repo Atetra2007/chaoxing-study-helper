@@ -65,5 +65,5 @@ export async function validateSource(tabId, candidate) {
     frames = await chrome.scripting.executeScript({ target, func:scanDocument });
   } catch { throw new Error('原课件页面已关闭或重新加载，请回到课件并重新识别。'); }
   const current = candidatesFromFrames(frames).find(c=>c.identity === candidate.identity);
-  if (!current || current.issue) throw new Error('课件内容或页码已变化，请重新识别后保存。');
+  if (!current || current.issue || current.totalBasis !== candidate.totalBasis) throw new Error('课件内容或页码已变化，请重新识别后保存。');
 }
