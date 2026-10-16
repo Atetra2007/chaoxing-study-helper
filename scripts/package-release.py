@@ -39,7 +39,7 @@ def main():
         raise ValueError('Build version mismatch')
     output = ROOT / 'outputs' / ('release-' + version)
     output.mkdir(parents=True, exist_ok=True)
-    extension = output / ('chaoxing-study-helper-' + version + '-edge.zip')
+    extension = output / ('chaoxing-study-helper-' + version + '.zip')
     write_zip(extension, {name: build / name for name in names}, 'chaoxing-study-helper-' + version + '/')
     promo = output / ('chaoxing-study-helper-' + version + '-promo.zip')
     write_zip(promo, {name: ROOT / 'docs' / name for name in ['推广素材.md', '试用反馈.md', 'assets/overview.png', 'assets/settings.png', 'assets/demo.gif']})

@@ -8,8 +8,8 @@ body:
   - type: input
     id: versions
     attributes:
-      label: 扩展、Edge和系统版本
-      placeholder: 例如扩展0.4.3，Edge版本号，Windows 11
+      label: 扩展、浏览器和系统版本
+      placeholder: 例如扩展0.4.3，Chrome或Edge及版本号，Windows 11
     validations:
       required: true
   - type: dropdown

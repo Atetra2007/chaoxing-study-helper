@@ -2,9 +2,9 @@
 
 **将你已打开的学习通课件保存到电脑，按课程整理，方便离线阅读和批注。**
 
-适用于 **Windows + Microsoft Edge**。当前公开试用版 **0.4.3**，免费使用；普通保存无需 Python、Node.js 或 OCR 服务。
+用于 **Windows 上的学习通课件保存**。当前公开试用版 **0.4.3**，Edge 已有实机保存记录，Chrome 可用同一安装包参与验证，实际保存仍待验收。免费使用；普通保存无需 Python、Node.js 或 OCR 服务。
 
-[**下载试用版**](https://github.com/Atetra2007/chaoxing-study-helper/releases/tag/v0.4.3) · [**安装教程**](docs/安装使用说明.md) · [**反馈问题**](https://github.com/Atetra2007/chaoxing-study-helper/issues/new/choose)
+[**下载安装包**](https://github.com/Atetra2007/chaoxing-study-helper/releases/download/v0.4.3/chaoxing-study-helper-0.4.3.zip) · [**安装教程（Edge / Chrome）**](docs/安装使用说明.md) · [**版本说明**](https://github.com/Atetra2007/chaoxing-study-helper/releases/tag/v0.4.3) · [**反馈问题**](https://github.com/Atetra2007/chaoxing-study-helper/issues/new/choose)
 
 ![学习通课件助手操作演示，使用31页合成课件](docs/assets/demo.gif)
 
@@ -22,11 +22,11 @@
 
 ## 三步开始
 
-1. 在[版本发布页](https://github.com/Atetra2007/chaoxing-study-helper/releases/tag/v0.4.3)下载 **`chaoxing-study-helper-0.4.3-edge.zip`**，解压到固定文件夹。
-2. 在 Edge 地址栏输入 `edge://extensions`，打开“开发人员模式”，点击“加载解压缩的扩展”，选择**直接包含 `manifest.json` 的文件夹**。
+1. 在[版本发布页](https://github.com/Atetra2007/chaoxing-study-helper/releases/tag/v0.4.3)下载 **`chaoxing-study-helper-0.4.3.zip`**，解压到固定文件夹。
+2. 打开浏览器扩展管理页：Edge 输入 `edge://extensions`，Chrome 输入 `chrome://extensions`。开启“开发人员模式 / 开发者模式”，点击“加载解压缩的扩展 / 加载已解压的扩展程序”，选择**直接包含 `manifest.json` 的文件夹**。
 3. 正常登录学习通并打开一份 PPT/PDF 课件，打开“课件助手”，核对名称、页数和保存位置后点击保存。
 
-下载的是扩展 ZIP，无需安装开发环境。发布页的 `Source code` 是开发源码，不能直接作为扩展加载。完整步骤与更新方法见[安装教程](docs/安装使用说明.md)。
+下载的是扩展 ZIP，无需安装开发环境。发布页的 `Source code` 是开发源码，`promo.zip` 是推广素材，都不是安装包。两个浏览器需分别安装、登录和授权保存目录。完整步骤、更新方法及首次保存检查见[安装教程](docs/安装使用说明.md)。
 
 ![保存设置界面，使用合成课件](docs/assets/settings.png)
 
@@ -34,10 +34,11 @@
 
 | 项目 | 当前状态 |
 | --- | --- |
-| Windows + Edge 116及以上 | 当前目标环境，建议使用最新版 Edge |
+| Windows + Edge 116及以上 | 已有实机保存记录，建议使用最新版 Edge |
 | 指定文件夹、按课程保存 | 0.4.3已有真实操作成功反馈及28页实际PDF检查记录 |
 | 页内小窗 | 部分实际页面出现加载超时，可主动使用“独立小窗打开” |
-| Chrome、macOS、其他阅读器 | 尚未完成真实兼容验收，不承诺可用 |
+| Windows + Chrome 116及以上 | 可按安装教程参与验证；尚未完成真实扩展保存验收 |
+| macOS、其他阅读器 | 尚未完成真实兼容验收，不承诺可用 |
 | 本机 OCR | 可选试验功能，默认关闭；需要额外准备，识别结果需核对 |
 
 保存期间请保留原课件标签页。刷新、导航、关闭来源页或重启浏览器后，不能继续原任务。当前限制为500页、单页25MiB、总图片250MiB。
@@ -52,7 +53,7 @@
 
 ## 反馈与参与
 
-遇到问题请[提交反馈](https://github.com/Atetra2007/chaoxing-study-helper/issues/new/choose)，说明扩展版本、Edge版本、操作步骤及提示文字。截图请遮挡姓名、学号、学校、课程链接和课件正文；不要上传 Cookie、连接文件或带登录参数的地址。
+遇到问题请[提交反馈](https://github.com/Atetra2007/chaoxing-study-helper/issues/new/choose)，说明扩展版本、浏览器名称和版本、操作步骤及提示文字。截图请遮挡姓名、学号、学校、课程链接和课件正文；不要上传 Cookie、连接文件或带登录参数的地址。
 
 欢迎先用一份短课件试用，再核对总页数、顺序和清晰度。可以参考[试用反馈清单](docs/试用反馈.md)。
 
@@ -71,7 +72,7 @@ pnpm preview
 
 构建位于 `outputs/chaoxing-study-helper-0.4.3/`。预览地址 `http://127.0.0.1:4178/demo` 使用合成数据；开发故障场景见 `/floating?test=failure`。预览不代替真实扩展的权限和课件保存验证。
 
-`pnpm package` 构建并生成发布 ZIP 和 SHA-256 校验文件。`pnpm update:local` 可备份、校验并更新本机固定安装目录；更新后需在 Edge 重新加载扩展。可选 OCR 准备见[本地 OCR 使用说明](docs/本地OCR使用说明.md)。
+`pnpm package` 构建并生成发布 ZIP 和 SHA-256 校验文件。`pnpm update:local` 可备份、校验并更新本机固定安装目录；更新后需在安装助手的浏览器中重新加载扩展。可选 OCR 准备见[本地 OCR 使用说明](docs/本地OCR使用说明.md)。
 
 自动检查运行于 GitHub Actions；Actions 临时构建保留14天，对外下载请使用 Releases。`work/`、`outputs/`、课件及个人笔记不进入源码仓库。
 
