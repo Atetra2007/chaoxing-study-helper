@@ -32,10 +32,14 @@ jobs:
         run: pnpm test
       - name: Build the extension
         run: pnpm run build
+      - name: Package the trial distribution
+        run: python scripts/package-release.py
       - name: Save installable build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: chaoxing-study-helper
-          path: outputs/chaoxing-study-helper-*/
+          path: |
+            outputs/chaoxing-study-helper-*/
+            outputs/release-*/*
           if-no-files-found: error
           retention-days: 14

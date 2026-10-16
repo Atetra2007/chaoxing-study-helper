@@ -25,3 +25,15 @@ test('reader roster never claims independent completeness on success',()=>{
 test('actionable categories distinguish download, network, timeout, source and login',()=>{
   for(const [message,code] of [['浏览器下载中断','DOWNLOAD'],['网络请求失败','NETWORK'],['图片读取超时','TIMEOUT'],['课件内容或页码已变化','SOURCE'],['HTTP 403','LOGIN']])assert.equal(classifyError(message).code,code);
 });
+test('known startup failures retain a safe connection category instead of source or unknown',()=>{
+  for(const message of ['后台保存未连接，请重新打开助手。','浏览器后台未响应，请重试保存。',
+    '扩展连接未完成，请重新加载扩展并刷新课件。','助手初始化未完成，请重新打开助手。',
+    'Could not establish connection. Receiving end does not exist.','Extension context invalidated.']){
+    assert.equal(classifyError(new Error(message)).code,'RUNTIME_INIT');
+  }
+  assert.equal(classifyError(new Error('当前浏览器不支持后台保存，请更新 Edge 后重新加载扩展。')).code,'RUNTIME_UNSUPPORTED');
+  const result=classifyError(new Error('internal failure credential=PRIVATE_TOKEN'));
+  assert.equal(result.code,'UNKNOWN');assert.ok(!JSON.stringify(result).includes('PRIVATE_TOKEN'));
+  const report=JSON.parse(diagnosticReport({version:'0.2.0',phase:'init',error:'后台保存未连接，请重新打开助手。'}));
+  assert.equal(report.version,'0.2.0');assert.equal(report.phase,'init');assert.equal(report.error,'RUNTIME_INIT');
+});

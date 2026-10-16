@@ -3,6 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { buildSource } from './build-source.mjs';
 
 const digest = data => createHash('sha256').update(data).digest('hex');
 const inside = (base, name) => name.toLowerCase().startsWith((base+path.sep).toLowerCase());
@@ -52,7 +53,7 @@ export async function updateLocal({root,target}) {
   }
   // Reject stale code even if its manifest version happens to match.
   for(const name of await files(path.join(root,'extension'))) {
-    if(/\.(js|html|css|json)$/.test(name) && digest(await readFile(path.join(root,'extension',name)))!==digest(await readFile(path.join(source,name))))throw new Error('构建与源码不一致，请重新构建。');
+    if(/\.(js|html|css|json)$/.test(name) && digest(buildSource(name,await readFile(path.join(root,'extension',name)),manifest.version))!==digest(await readFile(path.join(source,name))))throw new Error('构建与源码不一致，请重新构建。');
   }
   let backup=null;
   if(await exists(target)) {
@@ -79,5 +80,5 @@ if(process.argv[1] && import.meta.url===pathToFileURL(path.resolve(process.argv[
   await mkdir(path.dirname(config),{recursive:true});
   await writeFile(config,JSON.stringify({target:result.target},null,2));
   console.log(JSON.stringify(result,null,2));
-  console.log('文件已更新并逐项校验。请在Edge重新加载扩展，关闭旧助手页再打开，确认顶部版本。');
+  console.log('文件已更新并逐项校验。请在Edge重新加载扩展，关闭旧助手页并刷新原课件页，确认小窗底部版本。');
 }

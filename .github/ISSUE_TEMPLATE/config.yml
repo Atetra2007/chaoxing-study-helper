@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安装与常见问题
+    url: https://github.com/Atetra2007/chaoxing-study-helper/blob/main/docs/安装使用说明.md
+    about: 先检查安装目录、扩展版本和独立小窗的使用方式。

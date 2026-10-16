@@ -115,3 +115,65 @@ test('image-only title binding ignores hidden, foreign and unrelated readers',()
     assert.equal(scanDocument().imagePreviewKey,'');
   }
 });
+
+test('assistant hosts cannot add titles, totals, pages, originals or dialog bindings',()=>{
+  const course='<h2>真正的教材</h2><span>共1页</span><div id="anchor1"><img src="https://s3.cldisk.com/1.png"></div><a href="https://s3.cldisk.com/course.pdf">教材.pdf</a>';
+  const panel='<div id="mainid"><h1>学习通课件助手</h1></div><span>共999页</span><div id="anchor999"><img src="https://s3.cldisk.com/helper.png"></div><a href="https://s3.cldisk.com/helper.pdf">助手导出.pdf</a><div class="previewPop"><div class="readTitle"><span class="titleContent">助手.pdf</span></div><iframe src="https://mooc2-ans.chaoxing.com/helper"></iframe></div>';
+  setup(`<html><body>${course}</body></html>`);
+  const expected=scanDocument();
+  for(const marker of ['id="cx-study-helper-host"','data-cx-study-helper','data-cx-study-helper="panel"']){
+    setup(`<html><body><aside ${marker}>${panel}</aside>${course}</body></html>`);
+    assert.deepEqual(scanDocument(),expected,marker);
+  }
+});
+
+test('nested helper content does not pollute source ancestors or mask genuine descendants',()=>{
+  setup('<html><body><div id="mainid"><span data-cx-study-helper>助手标题</span><h3>物理教材<span data-cx-study-helper>错误标题</span></h3></div><p>共<span data-cx-study-helper>999</span>1页</p><div id="anchor1"><aside data-cx-study-helper><img src="https://s3.cldisk.com/helper.png"></aside><img src="https://s3.cldisk.com/real.png"></div><a href="https://s3.cldisk.com/course.pdf">原教材<span data-cx-study-helper>错误文件名.pdf</span>.pdf</a></body></html>');
+  const result=scanDocument();
+  assert.equal(result.title,'物理教材');assert.equal(result.rosterTotal,1);assert.equal(result.totalConflict,false);
+  assert.equal(result.pages[0].url,'https://s3.cldisk.com/real.png');assert.equal(result.originals[0].name,'原教材.pdf');
+});
+
+test('helper totals cannot strengthen completeness or hide genuine conflicting totals',()=>{
+  const panel='<aside id="cx-study-helper-host"><span>共31页</span></aside>';
+  const page='<div id="anchor1"><img src="https://s3.cldisk.com/1.png"></div>';
+  setup(`<html><body>${panel}${page}</body></html>`);
+  const result=scanDocument();assert.equal(result.rosterTotal,1);assert.equal(result.totalBasis,'reader-list');
+  setup(`<html><body>${panel}<span>共1页</span><span>共2页</span>${page}</body></html>`);
+  assert.equal(scanDocument().totalConflict,true);assert.equal(scanDocument().rosterTotal,null);
+  setup(`<html><body>${panel}<span>共0页</span>${page}</body></html>`);
+  assert.equal(scanDocument().rosterTotal,0);assert.equal(scanDocument().totalBasis,'explicit-total');
+});
+
+test('similar courseware IDs and attributes remain ordinary source content',()=>{
+  setup('<html><body><section id="cx-study-helper-host-course" data-cx-study-helper-note><h1>普通课件</h1><span>共1页</span><div id="anchor1"><img src="https://s3.cldisk.com/1.png"></div><a href="https://s3.cldisk.com/course.pptx">课件.pptx</a></section></body></html>');
+  const result=scanDocument();assert.equal(result.title,'普通课件');assert.equal(result.rosterTotal,1);
+  assert.equal(result.pages.length,1);assert.equal(result.originals.length,1);
+});
+
+test('helper duplicate wrapper IDs cannot supply or replace a real preview fallback',()=>{
+  const url='https://mooc2-ans.chaoxing.com/ananas/modules/pdf/mooc2-resource-index.html';
+  const frames=id=>`<iframe id="office-iframe" src="https://wps1.cldisk.com/weboffice/office/f/${id}"></iframe><iframe id="panView" src="https://pan-yz.chaoxing.com/screen/v2/file_${id}"></iframe><div id="otherOpen1"></div>`;
+  setup(`<html><body>${frames('real')}</body></html>`,url);
+  const expected=scanDocument();
+  setup(`<html><body><aside data-cx-study-helper>${frames('helper')}</aside>${frames('real')}</body></html>`,url);
+  assert.deepEqual(scanDocument(),expected);
+  setup(`<html><body><aside data-cx-study-helper>${frames('helper')}</aside></body></html>`,url);
+  assert.equal(scanDocument().previewFallback,null);assert.equal(scanDocument().imagePreviewKey,'');
+});
+
+test('helper labels and frames nested in a real library dialog are excluded',()=>{
+  setup('<html><body><div class="previewPop"><aside data-cx-study-helper><div class="readTitle"><span class="titleContent">助手.pdf</span></div><iframe src="https://mooc2-ans.chaoxing.com/helper"></iframe></aside><div class="readTitle"><span class="titleContent">真实教材<span data-cx-study-helper>（保存中）</span>.pdf</span></div><iframe src="/ananas/modules/pdf/mooc2-resource-index.html"></iframe></div></body></html>','https://mooc2-ans.chaoxing.com/mooc2-ans/coursedata/stu-datalist');
+  assert.deepEqual(scanDocument().titleBindings,[{frameKey:'https://mooc2-ans.chaoxing.com/ananas/modules/pdf/mooc2-resource-index.html',title:'真实教材.pdf'}]);
+});
+
+test('an assistant frame is not a source even when scanning all frames reaches it',()=>{
+  const contents='<head><title>学习通课件助手</title></head><body><h1>保存结果</h1><p>共1页</p><a href="https://s3.cldisk.com/course.pdf">保存结果.pdf</a></body>';
+  setup(`<html>${contents}</html>`,'chrome-extension://test-extension/panel.html');
+  assert.equal(scanDocument(),null);
+  setup(`<html data-cx-study-helper>${contents}</html>`);
+  assert.equal(scanDocument(),null);
+  setup(`<html>${contents}</html>`);
+  document.body.setAttribute('data-cx-study-helper','');
+  assert.equal(scanDocument(),null);
+});

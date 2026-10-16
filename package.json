@@ -1,16 +1,27 @@
 {
   "name": "chaoxing-study-helper",
-  "version": "0.1.5",
+  "version": "0.4.3",
   "private": true,
+  "license": "MIT",
+  "description": "保存当前打开的学习通课件，按课程整理，方便离线阅读和批注。",
+  "repository": { "type": "git", "url": "https://github.com/Atetra2007/chaoxing-study-helper.git" },
   "type": "module",
   "packageManager": "pnpm@11.19.0",
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "build": "node scripts/build.mjs",
     "update:local": "node scripts/update-local.mjs",
     "test": "node --test tests/*.test.mjs",
-    "preview": "node scripts/preview.mjs"
+    "preview": "node scripts/preview.mjs",
+    "package": "node scripts/build.mjs && python scripts/package-release.py"
   },
-  "dependencies": { "pdf-lib": "1.17.1" },
-  "devDependencies": { "linkedom": "0.18.12" }
+  "dependencies": {
+    "@noble/hashes": "2.0.0",
+    "pdf-lib": "1.17.1"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.12"
+  }
 }

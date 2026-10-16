@@ -1,0 +1,47 @@
+name: 使用问题
+description: 安装、识别、保存或文件内容出现问题
+title: "[问题] "
+body:
+  - type: markdown
+    attributes:
+      value: 请勿上传真实课件、账号、Cookie、连接文件或带签名的资源链接。截图请遮挡个人与课程信息。
+  - type: input
+    id: versions
+    attributes:
+      label: 扩展、Edge和系统版本
+      placeholder: 例如扩展0.4.3，Edge版本号，Windows 11
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 问题出现在哪一步
+      options:
+        - 安装或更新
+        - 打开助手或识别课件
+        - 选择保存目录
+        - 保存过程中
+        - 保存后的页数、顺序或清晰度
+        - 可选OCR
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 操作步骤和实际提示
+      description: 说明打开助手、选择选项到出现问题的步骤，粘贴简短错误文字即可。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果及补充信息
+      description: 可填写来源页数、导出页数和是否使用独立小窗，无需提供课程链接。
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 发布前检查
+      options:
+        - label: 我已检查内容和附件，没有包含凭据、私人信息或无权公开的课件。
+          required: true

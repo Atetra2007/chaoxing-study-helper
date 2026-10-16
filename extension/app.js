@@ -6,6 +6,7 @@ import { downloadFile } from './downloads.js';
 import { loadSourceTabs } from './source-tabs.js';
 import { classifyError, failureSummary, completenessText, diagnosticReport } from './diagnostics.js';
 import { readOCRConnection, localOCRClient, OCR_ORIGIN_PERMISSION } from './local-ocr.js';
+import { createTempStorage } from './temp-storage.js';
 
 const $ = id => document.getElementById(id);
 let sourceId = Number(new URLSearchParams(location.search).get('source')) || null;
@@ -57,7 +58,11 @@ function renderTask(snapshot) {
 }
 async function selectMaterial() {
   const version=++selectionVersion;
-  selected=candidates[Number($('material').value)] || null;
+  const next=candidates[Number($('material').value)] || null;
+  selected=null;$('start').disabled=true;
+  await discardTask();
+  if(version!==selectionVersion)return;
+  selected=next;
   $('quality-options').hidden=selected?.kind!=='images';
   task=null; cancelled=false; lastDownload=null;
   phase='ready';lastError=null;metrics={};report();
@@ -87,8 +92,16 @@ async function selectMaterial() {
   } catch { /* History does not block reading or saving. */ }
 }
 
+async function discardTask() {
+  const previous = task; task = null;
+  try { await previous?.dispose(); }
+  catch { ui.warning('本次临时文件未能清理，将在下次保存时重试清理。'); }
+}
+
 async function scan() {
   if(busy)return;
+  lock(true);
+  await discardTask();
   selectionVersion++;selected=null;candidates=[];scanned=false;task=null;
   $('quality-options').hidden=true;
   phase='scan';lastError=null;metrics={};$('completeness').textContent=completenessText(null);report();
@@ -145,9 +158,14 @@ async function start(retry=false) {
     if(ocr)await ocr.check();
     await validateSource(sourceId,candidate);
     if(cancelled)throw new Error('已取消保存。');
-    let bytes, duplicates=[], compressionWarning='';
+    let bytes, blob, contentHash, outputBytes, duplicates=[], compressionWarning='';
     if(candidate.kind==='images'){
-      if(!retry||!task||task.status==='cancelled')task=new CaptureTask(candidate.pages,{onChange:renderTask});
+      if(!retry||!task||task.status==='cancelled'||task.disposed){
+        await discardTask();
+        const store=await createTempStorage();
+        task=new CaptureTask(candidate.pages,{onChange:renderTask,store});
+        if(cancelled)throw new Error('已取消保存。');
+      }
       $('pause').hidden=false;$('pause').textContent='暂停';
       const result=await task.run();$('pause').hidden=true;
       if(result.failed){
@@ -160,8 +178,10 @@ async function start(retry=false) {
       metrics.fetchMs=performance.now()-startedAt;metrics.imageBytes=task.totalBytes;
       phase='assemble';const assembleStarted=performance.now();report();
       const output=await assemblePDF(PDFLib,[...task.cache.values()],{title,total:candidate.total,quality:imageQuality,recognizePage:ocr?item=>ocr.recognize(item):undefined,
+        loadImage:item=>task.loadImage(item),sink:await task.store.createOutput(),
         onProgress:(page,total,stage)=>{$('progress-caption').textContent=`${stage==='ocr'?'正在本机识别':'正在合并'} ${page} / ${total} 页`;report();},cancelled:()=>cancelled});
-      bytes=output.bytes;duplicates=output.duplicateGroups;
+      blob=output.blob;contentHash=output.contentHash;outputBytes=output.outputBytes;duplicates=output.duplicateGroups;
+      metrics.maxPDFObjectBytes=output.maxPDFObjectBytes;
       Object.assign(metrics,output.compression);
       if(output.compression.fallbackPages)compressionWarning=`${output.compression.fallbackPages} 页未能压缩，已保留原画质，页面未丢失。`;
       metrics.assembleMs=performance.now()-assembleStarted;
@@ -169,13 +189,17 @@ async function start(retry=false) {
       status('正在获取原文件…','获取中');bytes=await fetchOriginal(candidate);
       metrics.fetchMs=performance.now()-startedAt;
       await validateSource(sourceId,candidate);
+      outputBytes=bytes.length;
+      contentHash=await sha256(bytes);
+      blob=new Blob([bytes],{type:candidate.extension==='pdf'?'application/pdf':'application/octet-stream'});
+      bytes=null;
     }
     if(cancelled)throw new Error('已取消保存。');
     await validateSource(sourceId,candidate);
     if(cancelled)throw new Error('已取消保存。');
     status('文件已准备好，正在等待浏览器完成下载…','下载中');
-    phase='download';metrics.outputBytes=bytes.length;const downloadStarted=performance.now();report();
-    const blobURL=URL.createObjectURL(new Blob([bytes],{type:candidate.kind==='images'||candidate.extension==='pdf'?'application/pdf':'application/octet-stream'}));
+    phase='download';metrics.outputBytes=outputBytes;const downloadStarted=performance.now();report();
+    const blobURL=URL.createObjectURL(blob);
     let download;
     try{download=await downloadFile(chrome.downloads,blobURL,file,{signal:controller.signal,saveAs:$('save-as').checked});}
     finally{URL.revokeObjectURL(blobURL);}
@@ -183,12 +207,12 @@ async function start(retry=false) {
     metrics.downloadMs=performance.now()-downloadStarted;phase='complete';
     let historyWarning='';
     try{
-      const fingerprint=await sha256(candidate.identity);const contentHash=await sha256(bytes);
+      const fingerprint=await sha256(candidate.identity);
       const {history=[]}=await chrome.storage.local.get('history');
       await chrome.storage.local.set({course,history:[{fingerprint,contentHash,title,course,pages:candidate.total||null,at:Date.now()},...history].slice(0,60)});
     }catch{historyWarning='文件已保存，但本次保存记录未能写入。';}
     $('success').hidden=false;$('show-file').hidden=false;$('progress').value=100;
-    $('success-detail').textContent=`${candidate.kind==='images'?candidate.total+' 页 · '+(useOCR?`${metrics.textPages} 文字页 / ${metrics.imagePages} 图片页 · `:'')+(imageQuality==='balanced'?'均衡压缩':'原画质')+' · ':''}${(bytes.length/1024/1024).toFixed(1)} MB · ${file}`;
+    $('success-detail').textContent=`${candidate.kind==='images'?candidate.total+' 页 · '+(useOCR?`${metrics.textPages} 文字页 / ${metrics.imagePages} 图片页 · `:'')+(imageQuality==='balanced'?'均衡压缩':'原画质')+' · ':''}${(outputBytes/1024/1024).toFixed(1)} MB · ${file}`;
     $('progress-caption').textContent='浏览器已确认下载完成';
     $('completeness').textContent=completenessText(candidate,true);
     status(candidate.kind==='images'?completenessText(candidate,true):'原文件已保存到电脑。','下载完成','success');
@@ -198,10 +222,18 @@ async function start(retry=false) {
     phase=cancelled?'cancelled':'failed';showError(cancelled?'已取消本次保存。':error);
     status(cancelled?'已停止这次保存。':'保存尚未完成，请查看下方说明。',cancelled?'已取消':'未完成',cancelled?'':'error');
     if(!cancelled&&task&&task.status!=='cancelled'){$('retry').textContent='重试保存';$('retry').hidden=false;}
-  }finally{metrics.elapsedMs=performance.now()-startedAt;report();$('pause').hidden=true;lock(false);controller=null;}
+  }finally{
+    try {
+      if(task?.store&&!task.disposed){
+        if(cancelled||phase==='complete')await task.dispose();
+        else await task.store.removeOutput();
+      }
+    }catch{ui.warning('临时文件未能清理，将在下次保存时重试清理。');}
+    metrics.elapsedMs=performance.now()-startedAt;report();$('pause').hidden=true;lock(false);controller=null;
+  }
 }
 
-$('material').addEventListener('change',()=>{if($('material').value===''){selected=null;$('start').disabled=true;return;}void selectMaterial();});
+$('material').addEventListener('change',()=>{if($('material').value===''){selected=null;$('start').disabled=true;void discardTask();return;}void selectMaterial();});
 $('source').addEventListener('change',()=>{sourceId=Number($('source').value)||null;void scan();});
 $('rescan').addEventListener('click',()=>void scan());
 $('course').addEventListener('input',destination);$('title').addEventListener('input',destination);

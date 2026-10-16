@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { mkdir, mkdtemp, writeFile, readFile } from 'node:fs/promises';
 import { updateLocal } from '../scripts/update-local.mjs';
+import { buildSource } from '../scripts/build-source.mjs';
 
 async function fixture() {
   const base=path.resolve('work/update-tests');await mkdir(base,{recursive:true});
@@ -34,4 +35,32 @@ test('unsafe target, unrelated extension and stale build are refused before inst
   await writeFile(path.join(data.built,'app.js'),'stale');
   await assert.rejects(updateLocal(data),/不一致/);
   assert.equal(await readFile(path.join(data.target,'app.js'),'utf8'),'old app');
+});
+
+test('packaged hash import rewrite is checked without permitting stale module code',async()=>{
+  const data=await fixture();const source=Buffer.from("import { sha256 } from '@noble/hashes/sha2.js';\n");
+  await writeFile(path.join(data.root,'extension/stream-hash.js'),source);
+  await writeFile(path.join(data.built,'stream-hash.js'),buildSource('stream-hash.js',source,'0.1.4'));
+  await updateLocal(data);
+  assert.match(await readFile(path.join(data.target,'stream-hash.js'),'utf8'),/vendor\/noble-hashes/);
+  await writeFile(path.join(data.built,'stream-hash.js'),'stale');
+  await assert.rejects(updateLocal(data),/不一致/);
+});
+
+test('same-version builds without dependency version keys are rejected before the installed extension changes', async () => {
+  const data=await fixture();
+  const sources={
+    'workspace.html':'<link rel="stylesheet" href="panel.css"><script type="module" src="app.js"></script>',
+    'app.js':"import { value } from './diagnostics.js';",
+  };
+  for(const [name,source] of Object.entries(sources)) {
+    await writeFile(path.join(data.root,'extension',name),source);
+    await writeFile(path.join(data.built,name),source);
+  }
+  await assert.rejects(updateLocal(data),/不一致/);
+  assert.equal(await readFile(path.join(data.target,'app.js'),'utf8'),'old app');
+  for(const [name,source] of Object.entries(sources)) await writeFile(path.join(data.built,name),buildSource(name,Buffer.from(source),'0.1.4'));
+  await updateLocal(data);
+  assert.match(await readFile(path.join(data.target,'app.js'),'utf8'),/diagnostics\.js\?v=0\.1\.4/);
+  assert.match(await readFile(path.join(data.target,'workspace.html'),'utf8'),/app\.js\?v=0\.1\.4/);
 });

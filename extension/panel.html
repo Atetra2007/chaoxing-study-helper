@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>课件助手</title>
+  <link rel="stylesheet" href="panel.css">
+  <script type="module" src="panel-loader.js"></script>
+</head>
+<body>
+  <main id="panel">
+    <nav class="tabs" role="tablist" aria-label="课件助手导航">
+      <button id="courseware-tab" type="button" role="tab" aria-selected="true" aria-controls="main-view">课件</button>
+      <button id="settings" type="button" role="tab" aria-selected="false" aria-controls="settings-view" tabindex="-1">设置</button>
+    </nav>
+    <section id="main-view" role="tabpanel" aria-labelledby="courseware-tab">
+      <div class="file-row"><span class="file-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v6h5M8 13h8M8 17h6"/></svg></span><div class="file-info"><h1 id="display-title">正在连接课件…</h1><p id="display-course">读取当前页面</p></div></div>
+      <label id="material-field" class="field" hidden>选择要保存的课件<select id="material" aria-label="选择本次要保存的资料"></select></label>
+      <div id="meta" class="meta" hidden><span id="kind" class="tag"></span><span id="quality-summary"></span></div>
+      <p id="completeness" class="note">识别后显示页数依据。</p>
+      <div class="destination-card"><div class="destination-heading"><span id="destination-label">保存到</span><button id="edit-destination" class="text-button" type="button">修改</button></div><strong id="destination-root">浏览器下载文件夹</strong><p id="destination">学习通课件 / 未分类课程</p><p id="next-save-note" class="subtle" hidden></p></div>
+      <div id="status-area" role="status" aria-live="polite"><div class="status-line"><strong id="status-text">正在连接…</strong><span id="progress-caption"></span></div><progress id="progress" max="100" value="0" hidden></progress><p id="progress-hint" class="subtle" hidden></p></div>
+      <p id="error" class="message error" role="alert" hidden></p>
+      <p id="warning" class="message warning" hidden></p>
+      <p id="history-note" class="subtle" hidden></p>
+      <button id="start" class="primary" type="button" disabled>保存当前课件</button>
+      <button id="save-once" class="text-button save-once" type="button" hidden>本次另存为</button>
+      <div id="running-actions" class="button-row" hidden><button id="pause" type="button">暂停</button><button id="cancel" class="text-button" type="button">取消保存</button></div>
+      <button id="show-file" class="primary" type="button" hidden>打开所在文件夹</button>
+      <div class="bottom-row"><span class="subtle">只保存当前打开的课件</span><button id="rescan" class="text-button" type="button">重新识别</button></div>
+    </section>
+    <section id="settings-view" role="tabpanel" aria-labelledby="settings" hidden>
+      <div id="settings-content" class="settings-scroll">
+      <label class="field">保存位置<select id="save-location"><option value="default">浏览器下载文件夹</option><option value="ask">每次选择保存位置</option><option value="directory">指定文件夹</option></select></label>
+      <p id="location-note" class="field-hint">使用 Edge 设置的下载文件夹。</p>
+      <div id="directory-choice" class="directory-choice" hidden><div><strong id="directory-name">未选择文件夹</strong><span id="directory-permission" class="field-hint"></span></div><button id="choose-directory" type="button">选择文件夹</button></div>
+      <label class="switch-row"><span>按课程分文件夹</span><input id="group-by-course" class="switch" type="checkbox" checked></label>
+      <p id="group-note" class="field-hint" hidden>关闭后直接存入所选文件夹。</p>
+      <div id="course-field"><label class="field">课程文件夹<input id="course" type="text" maxlength="70" placeholder="未分类课程" autocomplete="off"></label><p id="course-note" class="field-hint">尚未识别课程，可为本次资料填写文件夹。</p></div>
+      <label class="field">当前文件名<input id="title" type="text" maxlength="160" placeholder="使用课件名称" autocomplete="off"></label>
+      <div id="quality-options"><label class="field">图片画质<select id="image-quality"><option value="balanced">均衡压缩（推荐）</option><option value="original">原画质</option></select></label><p id="quality-note" class="field-hint">适合日常阅读；精细公式可选原画质。</p>
+        <details id="ocr-details" class="advanced"><summary><span>文字识别（OCR）</span><span id="ocr-summary">可选</span></summary><div class="advanced-body"><label class="switch-row"><span>启用本机 OCR</span><input id="ocr-enabled" class="switch" type="checkbox"></label><p class="subtle">纯文字页生成文字 PDF；复杂页面保留图片。</p><div id="ocr-settings" hidden><p id="ocr-status" class="subtle" role="status">尚未连接本机 OCR</p><button id="ocr-connect" type="button">连接本机 OCR</button><label id="ocr-file-label" class="field" hidden>选择 ocr-connection.json<input id="ocr-file" type="file" accept=".json,application/json"></label><p class="subtle">先启动本机组件，再选择项目 work 文件夹中的连接文件。</p></div></div></details>
+      </div>
+      <div class="settings-path"><span class="subtle">保存路径预览</span><p id="settings-destination"></p></div>
+      <p id="settings-error" class="message error" role="alert" hidden></p>
+      </div>
+      <button id="done" class="primary" type="button">完成</button>
+    </section>
+    <p id="window-note" class="subtle" hidden>关闭小窗后保存继续，请保留原课件页面。</p>
+    <footer><span id="footer-note">本机保存</span><span id="version"></span></footer>
+  </main>
+</body>
+</html>

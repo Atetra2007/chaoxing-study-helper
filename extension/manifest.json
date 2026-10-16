@@ -1,13 +1,15 @@
 {
   "manifest_version": 3,
   "name": "学习通课件助手",
-  "version": "0.1.5",
+  "version": "0.4.3",
   "description": "保存当前打开的学习通课件，按页合成离线 PDF，并检查完整性。",
-  "minimum_chrome_version": "109",
-  "permissions": ["activeTab", "scripting", "downloads", "storage"],
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "scripting", "downloads", "storage", "offscreen"],
   "host_permissions": ["https://*.chaoxing.com/*", "https://*.cldisk.com/*"],
   "optional_host_permissions": ["http://127.0.0.1:8765/*"],
   "action": { "default_title": "保存当前学习通课件" },
   "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [{ "matches": ["https://*.chaoxing.com/*"], "js": ["floating.js"], "run_at": "document_idle", "all_frames": false }],
+  "web_accessible_resources": [{ "resources": ["panel.html"], "matches": ["https://*.chaoxing.com/*"] }],
   "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'self'" }
 }

@@ -1,0 +1,17 @@
+name: 改进建议
+description: 描述你的使用场景和希望改进的地方
+title: "[建议] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到了什么不方便
+      description: 请描述使用场景，不需要提供私人课程或账号信息。
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 希望怎样改进
+    validations:
+      required: true

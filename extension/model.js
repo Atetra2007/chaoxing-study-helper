@@ -19,9 +19,22 @@ export function safeName(value, fallback = '未命名课件') {
   return name;
 }
 
-export function outputPath(course, title, extension = 'pdf') {
+export function outputPath(course, title, extension = 'pdf', groupByCourse = true) {
   const stem = safeName(safeName(title).replace(/\.(pdf|pptx?|docx?)$/i, ''));
-  return `学习通课件/${safeName(course, '未分类课程')}/${stem}.${extension}`;
+  const directory = groupByCourse === false ? '学习通课件' : `学习通课件/${safeName(course, '未分类课程')}`;
+  return `${directory}/${stem}.${extension}`;
+}
+
+export function directoryRelativePath(course, title, extension = 'pdf', groupByCourse = true) {
+  if (groupByCourse !== false && !String(course || '').trim()) {
+    throw Object.assign(new Error('请先填写当前课程文件夹，或关闭按课程分文件夹。'), { code: 'DIRECTORY_COURSE' });
+  }
+  if (!['pdf', 'ppt', 'pptx', 'doc', 'docx'].includes(extension)) {
+    throw Object.assign(new Error('自定义目录的文件类型无效。'), { code: 'DIRECTORY_WRITE' });
+  }
+  const stem = safeName(safeName(title).replace(/\.(pdf|pptx?|docx?)$/i, ''));
+  const filename = `${stem}.${extension}`;
+  return groupByCourse === false ? filename : `${safeName(course)}/${filename}`;
 }
 
 export function normalizePages(input, total) {

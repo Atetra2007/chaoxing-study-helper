@@ -12,6 +12,8 @@ export class CaptureTask {
   constructor(pages, options = {}) {
     this.pages = pages.map(p => ({ ...p, status: 'pending', attempts: 0 }));
     this.cache = new Map();
+    this.store = options.store;
+    this.reservedBytes = 0;
     this.status = 'idle';
     this.controllers = new Set();
     this.waiters = [];
@@ -47,6 +49,25 @@ export class CaptureTask {
   async gate() {
     while (this.status === 'paused') await new Promise(resolve => this.waiters.push(resolve));
     if (this.status === 'cancelled') throw new Error('已取消保存。');
+  }
+  async loadImage(metadata) {
+    if (!this.store) return metadata;
+    try {
+      const bytes = await this.store.get(metadata.number);
+      if (bytes.length !== metadata.size || await sha256(bytes) !== metadata.hash) throw new Error('本机临时存储图片校验失败，请重试补存。');
+      return { ...metadata, bytes };
+    } catch (error) {
+      if (this.cache.delete(metadata.number)) this.totalBytes -= metadata.size;
+      const page = this.pages.find(p => p.number === metadata.number);
+      page.status = 'failed'; page.error = error.message; this.emit();
+      throw error;
+    }
+  }
+  async dispose() {
+    if (this.running) throw new Error('保存任务仍在执行，不能清理临时存储。');
+    await this.store?.dispose();
+    for (const entry of this.cache.values()) delete entry.bytes;
+    this.disposed = true;
   }
   async readResponse(response) {
     if (!response.ok) throw new Error(response.status === 401 || response.status === 403
@@ -88,9 +109,15 @@ export class CaptureTask {
           throw new Error('图片尺寸与识别时不一致，请重新识别课件。');
         const hash = await sha256(bytes);
         if (this.status === 'cancelled') throw new Error('已取消保存。');
-        if (this.totalBytes + bytes.length > this.maxTotalBytes) throw new Error('课件图片总量超过 250 MB，第一版暂不支持。');
-        this.totalBytes += bytes.length;
-        this.cache.set(page.number, { number: page.number, bytes, hash, ...dimensions });
+        if (this.totalBytes + this.reservedBytes + bytes.length > this.maxTotalBytes) throw new Error('课件图片总量超过 250 MB，第一版暂不支持。');
+        // Reserve before awaiting disk IO so concurrent writers cannot exceed the limit.
+        this.reservedBytes += bytes.length;
+        try {
+          await this.store?.put(page.number, bytes);
+          if (this.status === 'cancelled') throw new Error('已取消保存。');
+          this.totalBytes += bytes.length;
+          this.cache.set(page.number, { number: page.number, ...(this.store ? {} : { bytes }), size: bytes.length, hash, ...dimensions });
+        } finally { this.reservedBytes -= bytes.length; }
         page.status = 'ready'; this.emit(); return;
       } catch (error) {
         if (this.status === 'cancelled') throw new Error('已取消保存。');
@@ -104,6 +131,7 @@ export class CaptureTask {
     page.status = 'failed'; page.error = lastError; this.emit();
   }
   async run() {
+    if (this.disposed) throw new Error('临时存储已清理，请重新开始。');
     if (this.running) throw new Error('已有保存任务正在执行。');
     if (this.status === 'cancelled') throw new Error('任务已取消，请重新开始。');
     this.running = true; this.status = 'running';
@@ -118,7 +146,10 @@ export class CaptureTask {
           if (page) await this.getPage(page);
         }
       };
-      await Promise.all(Array.from({length:Math.min(this.concurrency, pending.length)}, worker));
+      // Cancellation must drain every in-flight disk write before cleanup/retry.
+      const results = await Promise.allSettled(Array.from({length:Math.min(this.concurrency, pending.length)}, worker));
+      const failure = results.find(result => result.status === 'rejected');
+      if (failure) throw failure.reason;
       await this.gate();
       this.status = this.cache.size === this.pages.length ? 'ready' : 'needs-retry';
     } finally { this.running = false; this.emit(); }
